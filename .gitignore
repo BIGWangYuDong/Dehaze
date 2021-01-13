@@ -1,3 +1,4 @@
 checkpoint/*
 DATA/*
 results/*
+__pycache__
