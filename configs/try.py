@@ -1,3 +1,6 @@
+train_name = 'Train'
+val_name = 'Val'
+test_name = 'Test'
 model = dict(type='Saliency_Net_inair2uw')
 dataset_type = 'AlignedDataset'
 
@@ -15,12 +18,18 @@ train_pipeline = [dict(type='LoadImageFromFile', gt_type='color'),
                   dict(type='RandomFlip', flip_ratio=0.5),
                   dict(type='Pad', size_divisor=32, mode='resize'),
                   dict(type='ImageToTensor'),
-                  dict(type='Normalize', **img_norm_cfg),
-                  ]
-test_pipeling = [dict(type='LoadImageFromFile'),]
+                  dict(type='Normalize', **img_norm_cfg)]
+test_pipeling = [dict(type='LoadImageFromFile', gt_type='color'),
+                 dict(type='Resize', img_scale=(256,256), keep_ratio=True),
+                 dict(type='RandomCrop', img_scale=(224,224)),
+                 dict(type='RandomFlip', flip_ratio=0.5),
+                 dict(type='Pad', size_divisor=32, mode='resize'),
+                 dict(type='ImageToTensor'),
+                 dict(type='Normalize', **img_norm_cfg)]
+
 data = dict(
-    samples_per_gpu=4,                                  # batch size, default = 4
-    workers_per_gpu=4,                                  # multi process, default = 4, debug uses 0
+    samples_per_gpu=1,                                  # batch size, default = 4
+    workers_per_gpu=0,                                  # multi process, default = 4, debug uses 0
     val_samples_per_gpu=1,                              # validate batch size, default = 1
     val_workers_per_gpu=4,                              # validate multi process, default = 4
     train=dict(                                         # load data in training process, debug uses 0
@@ -43,14 +52,28 @@ data = dict(
         pipeline=test_pipeling))
 
 train_cfg = dict(train_backbone=True)
-loss = dict(
-    loss_1=dict(type='CrossEntropyLoss', loss_weight=1.0),
-    loss_2=dict(type='L1Loss', loss_weight=1.0))
+
+
+loss_l1 = dict(type='SSIMLoss', window_size=11,
+               size_average=True, loss_weight=1.0),
+loss_l2 = dict(type='L1Loss', loss_weight=1.0)
+loss_perc = dict(type='PerceptualLoss', loss_weight=1.0,
+                 no_vgg_instance=False, vgg_mean=False,
+                 vgg_choose='conv4_3', vgg_maxpooling=False,
+                 )
+
 
 test_cfg = dict(metrics=['SSIM', 'MSE', 'PSNR'])
 
-optimizer = dict(type='Adam', lr=0.0001, betas=[0.5, 0.999])    # optimizer with type, learning rate, and betas.
-lr_config = dict()                                              # learning rate change method
+optimizer = dict(type='Adam', lr=0.001, betas=[0.5, 0.999])    # optimizer with type, learning rate, and betas.
+
+lr_config = dict(type='Epoch',          # Epoch or Iter
+                 warmup='linear',       # liner, step, exp,
+                 step=[10, 20],          # start with 1
+                 liner_end=0.00001,
+                 step_gamma=0.1,
+                 exp_gamma=0.9)
+
 log_config = dict(
     interval=1,
     hooks=[
