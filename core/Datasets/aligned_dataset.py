@@ -2,6 +2,7 @@ from Dehaze.core.Datasets.base_dataset import BaseDataset
 from Dehaze.core.Datasets.builder import DATASETS
 from Dehaze.core.Datasets.Pipelines import Compose
 import copy
+import numpy as np
 
 
 @DATASETS.register_module()
@@ -9,6 +10,8 @@ class AlignedDataset(BaseDataset):
     def __init__(self, **kwargs):
         super(AlignedDataset, self).__init__( **kwargs)
         self.data_infos = self.load_annotations()
+        if not self.test_mode:
+            self._set_group_flag()
 
     def load_annotations(self):
         data_infos = []
@@ -46,4 +49,16 @@ class AlignedDataset(BaseDataset):
         """
         results = copy.deepcopy(self.data_infos[idx])
         return self.pipeline(results)
+
+    def _set_group_flag(self):
+        """Set flag according to image aspect ratio.
+
+        Images with aspect ratio greater than 1 will be set as group 1,
+        otherwise group 0.
+        """
+        self.flag = np.zeros(len(self), dtype=np.uint8)
+        for i in range(len(self)):
+            img_info = self.data_infos[i]
+            # if img_info['width'] / img_info['height'] > 1:
+            self.flag[i] = 1
 

@@ -1,6 +1,7 @@
 from Dehaze.core.Datasets.builder import PIPELINES
 import torchvision.transforms as transforms
 import numpy as np
+import torch
 
 # transforms.XXX((H,W))
 # Image.open  ->  XX.size ->  W,H
@@ -104,8 +105,12 @@ class ImageToTensor(object):
     def __call__(self, results):
         image, gt = results['image'], results['gt']
         totensor = transforms.ToTensor()
-        results['image'] = totensor(image)
-        results['gt'] = totensor(gt)
+        if torch.cuda.is_available():
+            results['image'] = totensor(image).cuda()
+            results['gt'] = totensor(gt).cuda()
+        else:
+            results['image'] = totensor(image)
+            results['gt'] = totensor(gt)
         return results
 
 
