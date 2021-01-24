@@ -4,6 +4,9 @@ import time
 import os.path as osp
 from torch.nn.parallel import DataParallel
 import torch.nn as nn
+import collections
+from torch.autograd import Variable
+import visdom
 from Dehaze.configs import Config
 from Dehaze.core.Models import build_network
 from Dehaze.core.Datasets import build_dataset, build_dataloader
@@ -12,7 +15,39 @@ from Dehaze.utils import (mkdir_or_exist, get_root_logger,
                           save_epoch, save_latest, save_item,
                           resume, load)
 from Dehaze.core.Losses import build_loss
+from Dehaze.Visualizer import Visualizer
 
+
+
+def normPRED(d):
+    ma = torch.max(d)
+    mi = torch.min(d)
+
+    dn = (d-mi)/(ma-mi)
+
+    return dn
+
+
+TORCH_VERSION = torch.__version__
+if TORCH_VERSION < '1.1' or TORCH_VERSION == 'parrots':
+    try:
+        from tensorboardX import SummaryWriter
+    except ImportError:
+        raise ImportError('Please install tensorboardX to use '
+                          'TensorboardLoggerHook.')
+else:
+    try:
+        from torch.utils.tensorboard import SummaryWriter
+    except ImportError:
+        raise ImportError(
+            'Please run "pip install future tensorboard" to install '
+            'the dependencies to use torch.utils.tensorboard '
+            '(applicable to PyTorch 1.1 or higher)')
+
+from getpass import getuser
+from socket import gethostname
+def get_host_info():
+    return f'{getuser()}@{gethostname()}'
 
 
 def parse_args():
@@ -60,7 +95,7 @@ if __name__ == '__main__':
     cfg.log_file = osp.join(cfg.work_dir, f'{timestamp}.log')
 
     # create text log
-    logger = get_root_logger(name=cfg.train_name, log_file=cfg.log_file, log_level=cfg.log_level)
+    logger = get_root_logger(log_file=cfg.log_file, log_level=cfg.log_level)
     dash_line = '-' * 60 + '\n'
     logger.info(dash_line)
     logger.info(f'Config:\n{cfg.pretty_text}')
@@ -68,6 +103,9 @@ if __name__ == '__main__':
     # build model
     model = build_network(cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
     logger.info('-' * 20 + 'finish build model' + '-' * 20)
+    logger.info('Total Parameters: %d,   Trainable Parameters: %s',
+                model.net_parameters['Total'],
+                str(model.net_parameters['Trainable']))
     # build dataset
     datasets = build_dataset(cfg.data.train)
     logger.info('-' * 20 + 'finish build dataset' + '-' * 20)
@@ -91,10 +129,12 @@ if __name__ == '__main__':
     Scheduler = build_scheduler(cfg.lr_config)
     logger.info('-' * 20 + 'finish build optimizer' + '-' * 20)
 
-    perc_loss = build_loss(cfg.loss_perc)
-
+    visualizer = Visualizer()
+    vis = visdom.Visdom()
+    criterion_perc_loss = build_loss(cfg.loss_perc)
+    criterion_l1_loss = build_loss(cfg.loss_l1)
     ite_num = 0
-    start_epoch = 1
+    start_epoch = 1     # start range at 1-1 = 0
     running_loss = 0.0
     running_tar_loss = 0.0
     ite_num4val = 0
@@ -105,36 +145,98 @@ if __name__ == '__main__':
     elif cfg.load_from:
         load(cfg.load_from, model, logger)
 
-    lr_list = []
+
     print("---start training...")
     scheduler = Scheduler(optimizer, cfg)
+    # before run
+    t = time.time()
+    log_dir = osp.join(cfg.work_dir, 'tf_logs')
+    write = SummaryWriter(log_dir)
+    logger.info('Start running, host: %s, work_dir: %s',
+                         get_host_info(), cfg.work_dir)
+    logger.info('max: %d epochs, %d iters', cfg.total_epoch, max_iters)
     for epoch in range(start_epoch-1, cfg.total_epoch):
+        # before epoch
+        logger.info('\nStart Epoch %d -------- ', epoch+1)
         for i, data in enumerate(data_loader):
+            # before iter
+            data_time = time.time()-t
             ite_num = ite_num + 1
             ite_num4val = ite_num4val + 1
             inputs, gt = data['image'], data['gt']
-            out_rgb, out_saliency = model(inputs)
+            out_rgb = model(inputs)
 
             optimizer.zero_grad()
-            l1loss = nn.L1Loss()
-            percloss = perc_loss(out_rgb, gt, cfg)
-            loss = l1loss(gt, out_rgb)
+
+            loss_l1 = criterion_l1_loss(out_rgb, gt)
+            loss = loss_l1
             loss.backward()
             optimizer.step()
 
-            save_epoch(model, optimizer, cfg.work_dir, epoch, ite_num)
+            write.add_scalar('loss_l1', loss_l1, ite_num)
+            logger.info('Epoch: [%d][%d/%d]  lr: %f  time: %.3f loss_l1: %f   loss: %f',
+                        epoch+1, ite_num, max_iters, optimizer.param_groups[0]['lr'],
+                        data_time, loss_l1, loss)
+            losses = collections.OrderedDict()
+            losses['loss_l1'] = loss.data.cpu()
+            visualizer.plot_current_losses(epoch + 1,
+                                           float(i * cfg.data.samples_per_gpu) / len(data_loader),
+                                           losses)
+            # after iter
+            time_ = time.time() - t
+            t = time.time()
+            if ite_num % 10 == 0:
+                pred_1 = inputs[0:1, 0:1, :, :]
+                pred_1 = normPRED(pred_1)
+                pred_2 = inputs[0:1, 1:2, :, :]
+                pred_2 = normPRED(pred_2)
+                pred_3 = inputs[0:1, 2:3, :, :]
+                pred_3 = normPRED(pred_3)
+                inputs_show = torch.cat([pred_1, pred_2, pred_3], dim=1)
+                inputs_show = inputs_show[0].cpu().float().numpy() * 255
 
+                gt_1 = gt[0:1, 0:1, :, :]
+                gt_1 = normPRED(gt_1)
+                gt_2 = gt[0:1, 1:2, :, :]
+                gt_2 = normPRED(gt_2)
+                gt_3 = gt[0:1, 2:3, :, :]
+                gt_3 = normPRED(gt_3)
+                gt_show = torch.cat([gt_1, gt_2, gt_3], dim=1)
+                gt_show = gt_show[0].cpu().float().numpy() * 255
+
+                pred_1 = out_rgb[0:1, 0:1, :, :]
+                pred_1 = normPRED(pred_1)
+                pred_2 = out_rgb[0:1, 1:2, :, :]
+                pred_2 = normPRED(pred_2)
+                pred_3 = out_rgb[0:1, 2:3, :, :]
+                pred_3 = normPRED(pred_3)
+                outputs_show = torch.cat([pred_1, pred_2, pred_3], dim=1)
+                outputs_show = Variable(outputs_show[0], requires_grad=False).cpu().float().numpy() * 255
+
+                shows = []
+                shows.append(inputs_show)
+                shows.append(gt_show)
+                shows.append(outputs_show)
+                vis.images(shows, nrow=4, padding=3, win=1, opts=dict(title='Output images'))
+
+            if ite_num % 100 == 0:
+                save_epoch(model, optimizer, cfg.work_dir, epoch, ite_num)
+                model.train()
+        # after eppoch
         # update learning rate
-        print(optimizer.param_groups[0]['lr'])
-        lr_list.append(optimizer.param_groups[0]['lr'])
+        # print(optimizer.param_groups[0]['lr'])
         # if cfg.lr_config.step[1] >= (epoch+1) >= cfg.lr_config.step[0]:
         scheduler.step()
-
+    # after run
+    write.close()
         # print(optimizer.param_groups[0]['lr'])
     print()
-    import matplotlib.pyplot as plt
-    plt.plot(list(range(start_epoch-1, cfg.total_epoch)), lr_list)
-    plt.xlabel("epoch")
-    plt.ylabel("lr")
-    plt.title("CosineAnnealingLR")
-    plt.show()
+    logger.info('Finish Training')
+
+
+    # import matplotlib.pyplot as plt
+    # plt.plot(list(range(start_epoch-1, cfg.total_epoch)), lr_list)
+    # plt.xlabel("epoch")
+    # plt.ylabel("lr")
+    # plt.title("CosineAnnealingLR")
+    # plt.show()

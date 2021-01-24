@@ -1,24 +1,25 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from collections import OrderedDict
 from tensorboardX import SummaryWriter
 writer = SummaryWriter('log')
+import torchvision.models as models
+from Dehaze.core.Models.weight_init import normal_init
 
+
+# print(densenet.features)
 # visualize the network
-class NetSaliency(nn.Module):
-    def __init__(self, input=3, output=4):
-        '''
-        check the network
-        '''
-
+class Network(nn.Module):
+    def __init__(self):
+        super(Network, self).__init__()
+        pass
     def forward(self, x):
-        '''
-        forward
-        '''
+        pass
+        
 
 
-model = NetSaliency()
-dummy_input = torch.rand(2, 3, 512, 512)          # hypothesis the input is b*n*w*h
+model = Network().cuda()
+dummy_input = torch.rand(1, 3, 256, 256).cuda()          # hypothesis the input is b*n*w*h
 with SummaryWriter(comment='LeNet') as w:
-    w.add_graph(model, (dummy_input,))
+    w.add_graph(model, (dummy_input))

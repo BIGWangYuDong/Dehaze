@@ -5,7 +5,7 @@ import torch.distributed as dist
 logger_initialized = {}
 
 
-def get_root_logger(name='None', log_file=None, log_level=logging.INFO):
+def get_root_logger(log_file=None, log_level=logging.INFO):
     """Get root logger.
 
     Args:
@@ -16,7 +16,7 @@ def get_root_logger(name='None', log_file=None, log_level=logging.INFO):
     Returns:
         :obj:`logging.Logger`: The obtained logger
     """
-    logger = get_logger(name=name, log_file=log_file, log_level=log_level)
+    logger = get_logger(name='TJU_VIPLab', log_file=log_file, log_level=log_level)
 
     return logger
 

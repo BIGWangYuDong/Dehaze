@@ -4,3 +4,6 @@ results/*
 __pycache__
 vgg16.t7
 vgg16.weight
+log/*
+runs/*
+runner/*
