@@ -1,6 +1,9 @@
 from Dehaze.core.Registry import Registry, build_from_cfg
 from torch import nn
+
+
 NETWORK = Registry('network')
+BACKBONES = Registry('backbone')
 
 def build(cfg, registry, default_args=None):
     """Build a module.
@@ -26,3 +29,7 @@ def build(cfg, registry, default_args=None):
 def build_network(cfg, train_cfg=None, test_cfg=None):
     """Build detector."""
     return build(cfg, NETWORK, None)
+
+def build_backbone(cfg):
+    """Build backbone."""
+    return build(cfg, BACKBONES)

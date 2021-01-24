@@ -13,6 +13,7 @@ class AlignedDataset(BaseDataset):
         if not self.test_mode:
             self._set_group_flag()
 
+
     def load_annotations(self):
         data_infos = []
         with open(self.ann_file, 'r') as f:

@@ -23,13 +23,12 @@ class L1Loss(nn.Module):
         self.reduction = reduction
         self.loss_weight = loss_weight
 
-    def forward(self, pred, target, weight=None, avg_factor=None):
+    def forward(self, pred, target, weight=None):
         loss = self.loss_weight * \
                l1_loss(pred,
                        target,
                        weight,
-                       reduction=self.reduction,
-                       avg_facto=avg_factor)
+                       reduction=self.reduction)
         return loss
 
 @LOSSES.register_module()
