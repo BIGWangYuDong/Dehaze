@@ -23,7 +23,7 @@ class AlignedDataset(BaseDataset):
                     continue
                 data_infos.append({
                     "image_path": self.img_prefix + data,
-                    "gt_path": self.img_prefix + data
+                    "gt_path": self.gt_prefix + data
                 })
         return data_infos
 

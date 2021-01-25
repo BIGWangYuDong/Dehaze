@@ -2,6 +2,9 @@ from Dehaze.core.Datasets.builder import PIPELINES
 import torchvision.transforms as transforms
 import numpy as np
 import torch
+from PIL import Image
+import random
+import torchvision.transforms.functional as F
 
 # transforms.XXX((H,W))
 # Image.open  ->  XX.size ->  W,H
@@ -43,13 +46,22 @@ class RandomCrop(object):
     def __call__(self, results):
         image, gt = results['image'], results['gt']
         if isinstance(self.img_scale, int):
-            h, w = self.img_scale, self.img_scale
+            th, tw = self.img_scale, self.img_scale
         else:
-            h, w = self.img_scale
-        osize = [h, w]
-        transform = transforms.RandomCrop(osize)
-        results['image'] = transform(image)
-        results['gt'] = transform(gt)
+            th, tw = self.img_scale
+        # osize = [h, w]
+        # transform = transforms.RandomCrop(osize)
+        # results['image'] = transform(image)
+        # results['gt'] = transform(gt)
+        w, h = image.size
+        # th = tw = opt.crop_size
+        i = random.randint(0, h - th)
+        j = random.randint(0, w - tw)
+
+        results['image'] = F.crop(image, i, j, th, tw)
+        results['gt'] = F.crop(gt, i, j, th, tw)
+
+
         return results
 
 @PIPELINES.register_module()
@@ -63,10 +75,32 @@ class RandomFlip(object):
 
     def __call__(self, results):
         image, gt = results['image'], results['gt']
-        transform = transforms.RandomHorizontalFlip(p=self.flip_ratio)
-        results['image'] = transform(image)
-        results['gt'] = transform(gt)
+        # transform = transforms.RandomHorizontalFlip(p=self.flip_ratio)
+        # results['image'] = transform(image)
+        # results['gt'] = transform(gt)
+        flip_prob = random.random()
+        flip_transform = transforms.Compose([RandomHorizontalFlip(flip_prob)])
+        results['image'] = flip_transform(image)
+        results['gt'] = flip_transform(gt)
+
         return results
+
+
+class RandomHorizontalFlip(object):
+    """
+    Random horizontal flip.
+    水平翻转
+    prob = 0.5
+    """
+
+    def __init__(self, prob=None):
+        self.prob = prob
+
+    def __call__(self, img):
+        if (self.prob is None and random.random() < 0.5) or self.prob < 0.5:
+            return img.transpose(Image.FLIP_LEFT_RIGHT)
+
+        return img
 
 
 @PIPELINES.register_module()

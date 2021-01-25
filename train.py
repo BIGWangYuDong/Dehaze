@@ -1,3 +1,9 @@
+import sys
+import os
+curPath = os.path.abspath(os.path.dirname(__file__))
+rootPath = os.path.split(curPath)[0]
+sys.path.append(rootPath)
+
 import argparse
 import torch
 import time
@@ -16,7 +22,7 @@ from Dehaze.utils import (mkdir_or_exist, get_root_logger,
                           resume, load)
 from Dehaze.core.Losses import build_loss
 from Dehaze.Visualizer import Visualizer
-
+import numpy as np
 
 
 def normPRED(d):
@@ -24,8 +30,20 @@ def normPRED(d):
     mi = torch.min(d)
 
     dn = (d-mi)/(ma-mi)
-
     return dn
+
+def normimage(input_image, imtype=np.uint8):
+    if isinstance(input_image, torch.Tensor):  # get the data from a variable
+        image_tensor = input_image.data
+        image_numpy = image_tensor[0].cpu().float().numpy()
+        if image_numpy.shape[0] == 3:
+            image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0
+        if image_numpy.shape[0] == 1:  # grayscale to RGB
+            image_numpy = np.tile(image_numpy, (3, 1, 1))
+            image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0
+    else:  # if it is a numpy array, do nothing
+        image_numpy = input_image
+    return image_numpy.astype(imtype)
 
 
 TORCH_VERSION = torch.__version__
@@ -131,7 +149,7 @@ if __name__ == '__main__':
 
     visualizer = Visualizer()
     vis = visdom.Visdom()
-    criterion_perc_loss = build_loss(cfg.loss_perc)
+    criterion_ssim_loss = build_loss(cfg.loss_ssim)
     criterion_l1_loss = build_loss(cfg.loss_l1)
     ite_num = 0
     start_epoch = 1     # start range at 1-1 = 0
@@ -169,18 +187,22 @@ if __name__ == '__main__':
             optimizer.zero_grad()
 
             loss_l1 = criterion_l1_loss(out_rgb, gt)
-            loss = loss_l1
+            loss_ssim = criterion_ssim_loss(out_rgb, gt)
+            loss = loss_l1 + loss_ssim
             loss.backward()
             optimizer.step()
 
             write.add_scalar('loss_l1', loss_l1, ite_num)
-            logger.info('Epoch: [%d][%d/%d]  lr: %f  time: %.3f loss_l1: %f   loss: %f',
+            write.add_scalar('loss_ssim', loss_ssim, ite_num)
+            logger.info('Epoch: [%d][%d/%d]  lr: %f  time: %.3f loss_l1: %f  loss_ssim: %f  loss: %f',
                         epoch+1, ite_num, max_iters, optimizer.param_groups[0]['lr'],
-                        data_time, loss_l1, loss)
+                        data_time, loss_l1, loss_ssim, loss)
             losses = collections.OrderedDict()
-            losses['loss_l1'] = loss.data.cpu()
+            losses['loss_l1'] = loss_l1.data.cpu()
+            losses['loss_ssim'] = loss_ssim.data.cpu()
+            losses['total_loss'] = loss.data.cpu()
             visualizer.plot_current_losses(epoch + 1,
-                                           float(i * cfg.data.samples_per_gpu) / len(data_loader),
+                                           float(i) / len(data_loader),
                                            losses)
             # after iter
             time_ = time.time() - t
@@ -205,23 +227,45 @@ if __name__ == '__main__':
                 gt_show = gt_show[0].cpu().float().numpy() * 255
 
                 pred_1 = out_rgb[0:1, 0:1, :, :]
+                # pred_1 = normPRED(pred_1)
+                pred_2 = out_rgb[0:1, 1:2, :, :]
+                # pred_2 = normPRED(pred_2)
+                pred_3 = out_rgb[0:1, 2:3, :, :]
+                # pred_3 = normPRED(pred_3)
+                outputs_show = torch.cat([pred_1, pred_2, pred_3], dim=1)
+                outputs_show = Variable(outputs_show[0], requires_grad=False).cpu().float().numpy() * 255
+
+                pred_1 = out_rgb[0:1, 0:1, :, :]
                 pred_1 = normPRED(pred_1)
                 pred_2 = out_rgb[0:1, 1:2, :, :]
                 pred_2 = normPRED(pred_2)
                 pred_3 = out_rgb[0:1, 2:3, :, :]
                 pred_3 = normPRED(pred_3)
-                outputs_show = torch.cat([pred_1, pred_2, pred_3], dim=1)
-                outputs_show = Variable(outputs_show[0], requires_grad=False).cpu().float().numpy() * 255
+                outputs_show1 = torch.cat([pred_1, pred_2, pred_3], dim=1)
+                outputs_show1 = Variable(outputs_show1[0], requires_grad=False).cpu().float().numpy() * 255
+
+                inputshow = normimage(inputs)
+                gtshow = normimage(gt)
+                outshow = normimage(out_rgb)
+
 
                 shows = []
                 shows.append(inputs_show)
                 shows.append(gt_show)
                 shows.append(outputs_show)
+                shows.append(outputs_show1)
+                shows.append(inputshow.transpose([2, 0, 1]))
+                shows.append(gtshow.transpose([2, 0, 1]))
+                shows.append(outshow.transpose([2, 0, 1]))
                 vis.images(shows, nrow=4, padding=3, win=1, opts=dict(title='Output images'))
 
-            if ite_num % 100 == 0:
-                save_epoch(model, optimizer, cfg.work_dir, epoch, ite_num)
+            if ite_num % 50 == 0:
+                save_latest(model, optimizer, cfg.work_dir, epoch, ite_num)
                 model.train()
+        if epoch % 5 == 0:
+            # print('-'*30, 'saving model')
+            save_epoch(model, optimizer, cfg.work_dir, epoch, ite_num)
+            model.train()
         # after eppoch
         # update learning rate
         # print(optimizer.param_groups[0]['lr'])

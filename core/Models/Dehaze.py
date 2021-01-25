@@ -5,7 +5,7 @@ from Dehaze.core.Models.builder import NETWORK, build_backbone
 from Dehaze.core.Models.base_model import BaseNet
 from Dehaze.core.Models.backbone.densenet import DenseBlock
 from Dehaze.core.Models.backbone.resnet import Bottleneck
-from Dehaze.core.Models.weight_init import normal_init
+from Dehaze.core.Models.weight_init import normal_init, xavier_init
 
 
 
@@ -34,8 +34,18 @@ class DehazeNet(BaseNet):
         inplanes5 = 256
         outplanes = 32
         block = Bottleneck
-        self.relu = nn.ReLU(inplace=True)
-        self.downsample = nn.AvgPool2d(2)
+        self.EMdownsample1 = nn.AvgPool2d(2)
+        self.EMdownsample2 = nn.AvgPool2d(2)
+        self.EMdownsample3 = nn.AvgPool2d(2)
+        self.EMdownsample4 = nn.AvgPool2d(2)
+        self.EMdownsample5 = nn.AvgPool2d(2)
+
+        self.CASAdownsample1 = nn.AvgPool2d(2)
+        self.CASAdownsample2 = nn.AvgPool2d(2)
+        self.CASAdownsample3 = nn.AvgPool2d(2)
+        self.CASAdownsample4 = nn.AvgPool2d(2)
+        self.CASAdownsample5 = nn.AvgPool2d(2)
+
         self.EMblock1 = EMBlock(index=0, in_fea=3, mid_fea=32, out_fea=32)
         self.EMblock2 = EMBlock(index=2, in_fea=128+32+32, mid_fea=64, out_fea=64)
         self.EMblock3 = EMBlock(index=4, in_fea=256+64+64, mid_fea=128, out_fea=128)
@@ -55,29 +65,36 @@ class DehazeNet(BaseNet):
         self.CA5 = ChannelAttention(512)
 
         self.inplanes = inplanes1
-        self.Resblock1 = self._make_reslayer(block, planes=int(inplanes1 / 8), blocks=3)
+        self.Resblock1 = self._make_reslayer(block, planes=int(inplanes1 / 4), blocks=3)
         self.inplanes = inplanes2
-        self.Resblock2 = self._make_reslayer(block, planes=int(inplanes2 / 8), blocks=3)
+        self.Resblock2 = self._make_reslayer(block, planes=int(inplanes2 / 4), blocks=3)
         self.inplanes = inplanes3
-        self.Resblock3 = self._make_reslayer(block, planes=int(inplanes3 / 8), blocks=3)
+        self.Resblock3 = self._make_reslayer(block, planes=int(inplanes3 / 4), blocks=3)
         self.inplanes = inplanes4
-        self.Resblock4 = self._make_reslayer(block, planes=int(inplanes4 / 8), blocks=3)
+        self.Resblock4 = self._make_reslayer(block, planes=int(inplanes4 / 4), blocks=3)
         self.inplanes = inplanes5
-        self.Resblock5 = self._make_reslayer(block, planes=int(inplanes5 / 8), blocks=3)
-        self.upsample = nn.UpsamplingBilinear2d(scale_factor=2)
+        self.Resblock5 = self._make_reslayer(block, planes=int(inplanes5 / 4), blocks=3)
+
+        self.upsample1 = nn.UpsamplingBilinear2d(scale_factor=2)
         self.Res_conv1 = nn.Conv2d(inplanes1, 512, 1, 1, 0)
+
+        self.upsample2 = nn.UpsamplingBilinear2d(scale_factor=2)
         self.Res_conv2 = nn.Conv2d(inplanes2, 256, 1, 1, 0)
+
+        self.upsample3 = nn.UpsamplingBilinear2d(scale_factor=2)
         self.Res_conv3 = nn.Conv2d(inplanes3, 128, 1, 1, 0)
+
+        self.upsample4 = nn.UpsamplingBilinear2d(scale_factor=2)
         self.Res_conv4 = nn.Conv2d(inplanes4, 64, 1, 1, 0)
+
+        self.upsample5 = nn.UpsamplingBilinear2d(scale_factor=2)
         self.Res_conv5 = nn.Conv2d(inplanes5, 32, 1, 1, 0)
 
-        self.EMblockout = EMBlock(index=0, in_fea=32, mid_fea=32, out_fea=32)
-        self.EMblockout_conv1 = nn.Conv2d(32, 32, 3, 1, 1)
-        self.EMblockout_bn1 = nn.BatchNorm2d(32)
-        self.EMblockout_conv2 = nn.Conv2d(32, 3, 3, 1, 1)
-
-
-
+        self.relu = nn.LeakyReLU(0.1, inplace=True)
+        self.EMblockout = EMBlock(index=0, in_fea=35, mid_fea=20, out_fea=16)
+        self.EMblockout_conv1 = nn.Conv2d(16, 16, 3, 1, 1)
+        self.EMblockout_bn1 = nn.BatchNorm2d(16)
+        self.EMblockout_conv2 = nn.Conv2d(16, 3, 3, 1, 1)
 
     def _make_reslayer(self, block, planes, blocks, stride=1):
         layers = []
@@ -91,7 +108,7 @@ class DehazeNet(BaseNet):
         # super(DehazeNet, self).init_weight(pretrained)
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                normal_init(m)
+                xavier_init(m)
         self.backbone.init_weights(pretrained)
 
 
@@ -100,58 +117,58 @@ class DehazeNet(BaseNet):
         em1 = self.EMblock1(x)
         casa1 = self.CA1(em1) * em1
         casa1 = self.SA1(casa1) * casa1
-        em1 = self.downsample(em1)
-        casa1 = self.downsample(casa1)
+        em1 = self.EMdownsample1(em1)
+        casa1 = self.CASAdownsample1(casa1)
 
         em2 = self.EMblock2(torch.cat([dense_out1, em1, casa1], dim=1))
         casa2 = self.CA2(em2) * em2
         casa2 = self.SA2(casa2) * casa2
-        em2 = self.downsample(em2)
-        casa2 = self.downsample(casa2)
+        em2 = self.EMdownsample2(em2)
+        casa2 = self.CASAdownsample2(casa2)
 
         em3 = self.EMblock3(torch.cat([dense_out2, em2, casa2], dim=1))
         casa3 = self.CA3(em3) * em3
         casa3 = self.SA3(casa3) * casa3
-        em3 = self.downsample(em3)
-        casa3 = self.downsample(casa3)
+        em3 = self.EMdownsample3(em3)
+        casa3 = self.CASAdownsample3(casa3)
 
 
         em4 = self.EMblock4(torch.cat([dense_out3, em3, casa3], dim=1))
         casa4 = self.CA4(em4) * em4
         casa4 = self.SA4(casa4) * casa4
-        em4 = self.downsample(em4)
-        casa4 = self.downsample(casa4)
+        em4 = self.EMdownsample4(em4)
+        casa4 = self.CASAdownsample4(casa4)
 
 
         em5 = self.EMblock5(torch.cat([dense_out4, em4, casa4], dim=1))
         casa5 = self.CA5(em5) * em5
         casa5 = self.SA5(casa5) * casa5
-        em5 = self.downsample(em5)
-        casa5 = self.downsample(casa5)
+        em5 = self.EMdownsample5(em5)
+        casa5 = self.CASAdownsample5(casa5)
 
         resout1 = self.Resblock1(torch.cat([dense_out5, em5, casa5], dim=1))
-        resout1 = self.Res_conv1(self.upsample(resout1))
+        resout1 = self.Res_conv1(self.upsample1(resout1))
 
         resout2 = self.Resblock2(torch.cat([dense_out4, em4, casa4, resout1], dim=1))
-        resout2 = self.Res_conv2(self.upsample(resout2))
+        resout2 = self.Res_conv2(self.upsample2(resout2))
 
         resout3 = self.Resblock3(torch.cat([dense_out3, em3, casa3, resout2], dim=1))
-        resout3 = self.Res_conv3(self.upsample(resout3))
+        resout3 = self.Res_conv3(self.upsample3(resout3))
 
         resout4 = self.Resblock4(torch.cat([dense_out2, em2, casa2, resout3], dim=1))
-        resout4 = self.Res_conv4(self.upsample(resout4))
+        resout4 = self.Res_conv4(self.upsample4(resout4))
 
         resout5 = self.Resblock5(torch.cat([dense_out1, em1, casa1, resout4], dim=1))
-        resout5 = self.Res_conv5(self.upsample(resout5))
+        resout5 = self.Res_conv5(self.upsample5(resout5))
 
-        out = self.EMblockout(resout5)
+        out = self.EMblockout(torch.cat([resout5, x], dim=1))
         out = self.EMblockout_conv1(out)
         out = self.EMblockout_bn1(out)
         out = self.relu(out)
         out = self.EMblockout_conv2(out)
 
+        # return F.tanh(out)
         return out
-
 
 class ChannelAttention(nn.Module):
     def __init__(self, in_planes, ratio=16):
@@ -216,22 +233,28 @@ class EMBlock(nn.Module):
         self.conv3_32 = nn.Conv2d(mid_fea, 1, kernel_size=1, stride=1, padding=0)
 
         self.conv4 = nn.Conv2d(mid_fea+4, out_fea, 3, 1, 1)
-        self.relu = nn.LeakyReLU(0.2, inplace=True)
+        self.relu1 = nn.LeakyReLU(0.2, inplace=True)
+        self.relu2 = nn.LeakyReLU(0.2, inplace=True)
+        self.relu3_4 = nn.LeakyReLU(0.2, inplace=True)
+        self.relu3_8 = nn.LeakyReLU(0.2, inplace=True)
+        self.relu3_16 = nn.LeakyReLU(0.2, inplace=True)
+        self.relu3_32 = nn.LeakyReLU(0.2, inplace=True)
+        self.relu4 = nn.LeakyReLU(0.2, inplace=True)
 
     def forward(self, x):
-        out = self.relu(self.conv1(x))
-        out = self.relu(self.conv2(out))
+        out = self.relu1(self.conv1(x))
+        out = self.relu2(self.conv2(out))
         out_32 = self.avgpool32(out)
         out_16 = self.avgpool16(out)
         out_8 = self.avgpool8(out)
         out_4 = self.avgpool4(out)
 
-        out_32 =self.upsample32(self.relu(self.conv3_32(out_32)))
-        out_16 =self.upsample16(self.relu(self.conv3_16(out_16)))
-        out_8 =self.upsample8(self.relu(self.conv3_8(out_8)))
-        out_4 = self.upsample4(self.relu(self.conv3_4(out_4)))
+        out_32 =self.upsample32(self.relu3_32(self.conv3_32(out_32)))
+        out_16 =self.upsample16(self.relu3_16(self.conv3_16(out_16)))
+        out_8 =self.upsample8(self.relu3_8(self.conv3_8(out_8)))
+        out_4 = self.upsample4(self.relu3_4(self.conv3_4(out_4)))
         out = torch.cat((out_32, out_16, out_8, out_4, out), dim=1)
-        out = self.relu(self.conv4(out))
+        out = self.relu4(self.conv4(out))
         return out
 
 

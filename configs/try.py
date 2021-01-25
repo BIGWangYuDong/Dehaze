@@ -21,7 +21,7 @@ test_ann_file_path = 'test.txt'         # txt file for loading images, default =
 
 img_norm_cfg = dict(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
 train_pipeline = [dict(type='LoadImageFromFile', gt_type='color'),
-                  dict(type='Resize', img_scale=(288,288), keep_ratio=True),
+                  dict(type='Resize', img_scale=(400,400), keep_ratio=True),
                   dict(type='RandomCrop', img_scale=(256,256)),
                   dict(type='RandomFlip', flip_ratio=0.5),
                   dict(type='Pad', size_divisor=32, mode='resize'),
@@ -36,7 +36,7 @@ test_pipeling = [dict(type='LoadImageFromFile', gt_type='color'),
                  dict(type='Normalize', **img_norm_cfg)]
 
 data = dict(
-    samples_per_gpu=1,                                  # batch size, default = 4
+    samples_per_gpu=2,                                  # batch size, default = 4
     workers_per_gpu=0,                                  # multi process, default = 4, debug uses 0
     val_samples_per_gpu=1,                              # validate batch size, default = 1
     val_workers_per_gpu=4,                              # validate multi process, default = 4
@@ -63,7 +63,7 @@ train_cfg = dict(train_backbone=True)
 test_cfg = dict(metrics=['SSIM', 'MSE', 'PSNR'])
 
 loss_ssim = dict(type='SSIMLoss', window_size=11,
-               size_average=True, loss_weight=1.0),
+                 size_average=True, loss_weight=1.0)
 loss_l1 = dict(type='L1Loss', loss_weight=1.0)
 loss_perc = dict(type='PerceptualLoss', loss_weight=1.0,
                  no_vgg_instance=False, vgg_mean=False,
@@ -74,7 +74,7 @@ optimizer = dict(type='Adam', lr=0.001, betas=[0.5, 0.999])    # optimizer with 
 # 需要写iter
 lr_config = dict(type='Epoch',          # Epoch or Iter
                  warmup='linear',       # liner, step, exp,
-                 step=[10, 20],          # start with 1
+                 step=[150, 200],          # start with 1
                  liner_end=0.00001,
                  step_gamma=0.1,
                  exp_gamma=0.9)
@@ -88,9 +88,9 @@ log_config = dict(
         dict(type='VisdomLoggerHook')
     ])
 
-total_epoch = 20
+total_epoch = 200
 total_iters = None                      # epoch before iters,
-work_dir = './checkpoints/shortcut'     #
+work_dir = './checkpoints/dehaze1'     #
 load_from = None                        # only load network parameters
 resume_from = None                      # resume training
 save_freq_iters = 500                   # saving frequent (saving every XX iters)
