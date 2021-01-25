@@ -63,6 +63,7 @@ git merge XXX
 git push origin master
 git branch -d XXX
 
+git pull origin XXX(网上) XXX(本地) # 将网上的分支pull到本地
 
 
 
