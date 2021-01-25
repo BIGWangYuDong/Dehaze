@@ -29,8 +29,6 @@ train_pipeline = [dict(type='LoadImageFromFile', gt_type='color'),
                   dict(type='Normalize', **img_norm_cfg)]
 test_pipeling = [dict(type='LoadImageFromFile', gt_type='color'),
                  dict(type='Resize', img_scale=(256,256), keep_ratio=True),
-                 dict(type='RandomCrop', img_scale=(224,224)),
-                 dict(type='RandomFlip', flip_ratio=0.5),
                  dict(type='Pad', size_divisor=32, mode='resize'),
                  dict(type='ImageToTensor'),
                  dict(type='Normalize', **img_norm_cfg)]
@@ -39,7 +37,7 @@ data = dict(
     samples_per_gpu=2,                                  # batch size, default = 4
     workers_per_gpu=0,                                  # multi process, default = 4, debug uses 0
     val_samples_per_gpu=1,                              # validate batch size, default = 1
-    val_workers_per_gpu=4,                              # validate multi process, default = 4
+    val_workers_per_gpu=0,                              # validate multi process, default = 4
     train=dict(                                         # load data in training process, debug uses 0
         type=dataset_type,
         ann_file=data_root_train + train_ann_file_path,
@@ -57,7 +55,8 @@ data = dict(
         ann_file=data_root_test + test_ann_file_path,
         img_prefix=data_root_test + 'train/',
         gt_prefix=data_root_test + 'gt/',
-        pipeline=test_pipeling))
+        pipeline=test_pipeling,
+        test_mode=True))
 
 train_cfg = dict(train_backbone=True)
 test_cfg = dict(metrics=['SSIM', 'MSE', 'PSNR'])
@@ -90,9 +89,11 @@ log_config = dict(
 
 total_epoch = 200
 total_iters = None                      # epoch before iters,
-work_dir = './checkpoints/dehaze1'     #
+work_dir = './checkpoints/dehaze1'      #
 load_from = None                        # only load network parameters
 resume_from = None                      # resume training
 save_freq_iters = 500                   # saving frequent (saving every XX iters)
 save_freq_epoch = 1                     # saving frequent (saving every XX epoch(s))
 log_level = 'INFO'                      # The level of logging.
+
+savepath = 'results/dehaze1'

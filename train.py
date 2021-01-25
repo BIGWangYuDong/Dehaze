@@ -187,7 +187,7 @@ if __name__ == '__main__':
             optimizer.zero_grad()
 
             loss_l1 = criterion_l1_loss(out_rgb, gt)
-            loss_ssim = criterion_ssim_loss(out_rgb, gt)
+            loss_ssim = criterion_ssim_loss(out_rgb, gt) * 0
             loss = loss_l1 + loss_ssim
             loss.backward()
             optimizer.step()

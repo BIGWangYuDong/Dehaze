@@ -10,8 +10,8 @@ class AlignedDataset(BaseDataset):
     def __init__(self, **kwargs):
         super(AlignedDataset, self).__init__( **kwargs)
         self.data_infos = self.load_annotations()
-        if not self.test_mode:
-            self._set_group_flag()
+
+        self._set_group_flag()
 
 
     def load_annotations(self):

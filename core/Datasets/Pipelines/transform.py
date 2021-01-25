@@ -145,6 +145,7 @@ class ImageToTensor(object):
         else:
             results['image'] = totensor(image)
             results['gt'] = totensor(gt)
+        results['image_id'] = results['image_path'].split('/')[-1].split('.')[0]
         return results
 
 

@@ -14,7 +14,8 @@ def load(filename,
     else:
         checkpoint = torch.load(filename)
     model.load_state_dict(checkpoint['state_dict'])
-    logger.info('load checkpoint from %s', filename)
+    if logger is not None:
+        logger.info('load checkpoint from %s', filename)
 
 
 def resume(filename,

@@ -167,8 +167,8 @@ class DehazeNet(BaseNet):
         out = self.relu(out)
         out = self.EMblockout_conv2(out)
 
-        # return F.tanh(out)
-        return out
+        return F.tanh(out)
+        # return out
 
 class ChannelAttention(nn.Module):
     def __init__(self, in_planes, ratio=16):
