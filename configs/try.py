@@ -2,8 +2,8 @@ train_name = 'Train'
 val_name = 'Val'
 test_name = 'Test'
 # backbone 和 init_type 需要写
-model = dict(type='DehazeNet',
-             backbone=dict(type='DenseBlock', pretrained=True),
+model = dict(type='DehazeNetNew',
+             backbone=dict(type='DenseNew', pretrained=True),
              pretrained=True,
              init_weight_type=dict(type='normal_init',
                                    mean=0,
@@ -15,32 +15,33 @@ dataset_type = 'AlignedDataset'
 data_root_train = '/home/dong/python-project/Dehaze/DATA/Train/'                  # data root, default = DATA
 data_root_test = '/home/dong/python-project/Dehaze/DATA/Test/'
 train_ann_file_path = 'train.txt'        # txt file for loading images, default = train.txt
+train_ann_finetune_path = 'train_finetune.txt'
 val_ann_file_path = 'test.txt'          # txt file for loading images (validate during training process), default = test.txt
 test_ann_file_path = 'test.txt'         # txt file for loading images, default = test.txt
 
 
 img_norm_cfg = dict(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
 train_pipeline = [dict(type='LoadImageFromFile', gt_type='color'),
-                  dict(type='Resize', img_scale=(400,400), keep_ratio=True),
-                  dict(type='RandomCrop', img_scale=(256,256)),
+                  dict(type='Resize', img_scale=(1100,1100), keep_ratio=True),
+                  dict(type='RandomCrop', img_scale=(1024,1024)),
                   dict(type='RandomFlip', flip_ratio=0.5),
-                  dict(type='Pad', size_divisor=32, mode='resize'),
+                  # dict(type='Pad', size_divisor=32, mode='resize'),
                   dict(type='ImageToTensor'),
                   dict(type='Normalize', **img_norm_cfg)]
 test_pipeling = [dict(type='LoadImageFromFile', gt_type='color'),
-                 dict(type='Resize', img_scale=(256,256), keep_ratio=True),
-                 dict(type='Pad', size_divisor=32, mode='resize'),
+                 # dict(type='Resize', img_scale=(256,256), keep_ratio=True),
+                 # dict(type='Pad', size_divisor=32, mode='resize'),
                  dict(type='ImageToTensor'),
                  dict(type='Normalize', **img_norm_cfg)]
 
 data = dict(
-    samples_per_gpu=2,                                  # batch size, default = 4
+    samples_per_gpu=4,                                  # batch size, default = 4
     workers_per_gpu=0,                                  # multi process, default = 4, debug uses 0
     val_samples_per_gpu=1,                              # validate batch size, default = 1
     val_workers_per_gpu=0,                              # validate multi process, default = 4
     train=dict(                                         # load data in training process, debug uses 0
         type=dataset_type,
-        ann_file=data_root_train + train_ann_file_path,
+        ann_file=data_root_train + train_ann_finetune_path,
         img_prefix=data_root_train + 'train/',
         gt_prefix=data_root_train + 'gt/',
         pipeline=train_pipeline),
@@ -68,12 +69,12 @@ loss_perc = dict(type='PerceptualLoss', loss_weight=1.0,
                  no_vgg_instance=False, vgg_mean=False,
                  vgg_choose='conv4_3', vgg_maxpooling=False)
 
-optimizer = dict(type='Adam', lr=0.001, betas=[0.5, 0.999])    # optimizer with type, learning rate, and betas.
+optimizer = dict(type='Adam', lr=0.0001, betas=[0.5, 0.999])    # optimizer with type, learning rate, and betas.
 
 # 需要写iter
 lr_config = dict(type='Epoch',          # Epoch or Iter
                  warmup='linear',       # liner, step, exp,
-                 step=[150, 200],          # start with 1
+                 step=[300, 400],          # start with 1
                  liner_end=0.00001,
                  step_gamma=0.1,
                  exp_gamma=0.9)
@@ -87,13 +88,13 @@ log_config = dict(
         dict(type='VisdomLoggerHook')
     ])
 
-total_epoch = 200
+total_epoch = 400
 total_iters = None                      # epoch before iters,
-work_dir = './checkpoints/dehaze1'      #
-load_from = None                        # only load network parameters
+work_dir = './checkpoints/dehaze5_finetune2'      #
+load_from = None            # only load network parameters
 resume_from = None                      # resume training
 save_freq_iters = 500                   # saving frequent (saving every XX iters)
 save_freq_epoch = 1                     # saving frequent (saving every XX epoch(s))
 log_level = 'INFO'                      # The level of logging.
 
-savepath = 'results/dehaze1'
+savepath = 'results/dehaze5_finetune2'

@@ -2,7 +2,7 @@ import torch
 from Dehaze.utils import get_root_logger
 from collections import OrderedDict
 import os
-
+import os.path as osp
 
 def load(filename,
          model,
@@ -13,6 +13,7 @@ def load(filename,
                                 map_location=lambda storage, loc: storage.cuda(device_id))
     else:
         checkpoint = torch.load(filename)
+
     model.load_state_dict(checkpoint['state_dict'])
     if logger is not None:
         logger.info('load checkpoint from %s', filename)
@@ -122,7 +123,7 @@ def save_latest(model,
         checkpoint = {
             'meta': meta,
             'state_dict': weights_to_cpu(model.state_dict())}
-    save_path = out_dir + 'latest.pth'
+    save_path = osp.join(out_dir, 'latest.pth')
     torch.save(checkpoint, save_path)
 
 

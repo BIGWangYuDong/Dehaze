@@ -180,14 +180,14 @@ if __name__ == '__main__':
             # before iter
             data_time = time.time()-t
             ite_num = ite_num + 1
-            ite_num4val = ite_num4val + 1
+            ite_num4val = ite_num*cfg.data.samples_per_gpu
             inputs, gt = data['image'], data['gt']
             out_rgb = model(inputs)
 
             optimizer.zero_grad()
 
             loss_l1 = criterion_l1_loss(out_rgb, gt)
-            loss_ssim = criterion_ssim_loss(out_rgb, gt) * 0
+            loss_ssim = criterion_ssim_loss(out_rgb, gt)
             loss = loss_l1 + loss_ssim
             loss.backward()
             optimizer.step()
@@ -207,62 +207,61 @@ if __name__ == '__main__':
             # after iter
             time_ = time.time() - t
             t = time.time()
-            if ite_num % 10 == 0:
-                pred_1 = inputs[0:1, 0:1, :, :]
-                pred_1 = normPRED(pred_1)
-                pred_2 = inputs[0:1, 1:2, :, :]
-                pred_2 = normPRED(pred_2)
-                pred_3 = inputs[0:1, 2:3, :, :]
-                pred_3 = normPRED(pred_3)
-                inputs_show = torch.cat([pred_1, pred_2, pred_3], dim=1)
-                inputs_show = inputs_show[0].cpu().float().numpy() * 255
-
-                gt_1 = gt[0:1, 0:1, :, :]
-                gt_1 = normPRED(gt_1)
-                gt_2 = gt[0:1, 1:2, :, :]
-                gt_2 = normPRED(gt_2)
-                gt_3 = gt[0:1, 2:3, :, :]
-                gt_3 = normPRED(gt_3)
-                gt_show = torch.cat([gt_1, gt_2, gt_3], dim=1)
-                gt_show = gt_show[0].cpu().float().numpy() * 255
-
-                pred_1 = out_rgb[0:1, 0:1, :, :]
+            if ite_num4val % 40 == 0:
+                # pred_1 = inputs[0:1, 0:1, :, :]
                 # pred_1 = normPRED(pred_1)
-                pred_2 = out_rgb[0:1, 1:2, :, :]
+                # pred_2 = inputs[0:1, 1:2, :, :]
                 # pred_2 = normPRED(pred_2)
-                pred_3 = out_rgb[0:1, 2:3, :, :]
+                # pred_3 = inputs[0:1, 2:3, :, :]
                 # pred_3 = normPRED(pred_3)
-                outputs_show = torch.cat([pred_1, pred_2, pred_3], dim=1)
-                outputs_show = Variable(outputs_show[0], requires_grad=False).cpu().float().numpy() * 255
-
-                pred_1 = out_rgb[0:1, 0:1, :, :]
-                pred_1 = normPRED(pred_1)
-                pred_2 = out_rgb[0:1, 1:2, :, :]
-                pred_2 = normPRED(pred_2)
-                pred_3 = out_rgb[0:1, 2:3, :, :]
-                pred_3 = normPRED(pred_3)
-                outputs_show1 = torch.cat([pred_1, pred_2, pred_3], dim=1)
-                outputs_show1 = Variable(outputs_show1[0], requires_grad=False).cpu().float().numpy() * 255
+                # inputs_show = torch.cat([pred_1, pred_2, pred_3], dim=1)
+                # inputs_show = inputs_show[0].cpu().float().numpy() * 255
+                #
+                # gt_1 = gt[0:1, 0:1, :, :]
+                # gt_1 = normPRED(gt_1)
+                # gt_2 = gt[0:1, 1:2, :, :]
+                # gt_2 = normPRED(gt_2)
+                # gt_3 = gt[0:1, 2:3, :, :]
+                # gt_3 = normPRED(gt_3)
+                # gt_show = torch.cat([gt_1, gt_2, gt_3], dim=1)
+                # gt_show = gt_show[0].cpu().float().numpy() * 255
+                #
+                # pred_1 = out_rgb[0:1, 0:1, :, :]
+                # # pred_1 = normPRED(pred_1)
+                # pred_2 = out_rgb[0:1, 1:2, :, :]
+                # # pred_2 = normPRED(pred_2)
+                # pred_3 = out_rgb[0:1, 2:3, :, :]
+                # # pred_3 = normPRED(pred_3)
+                # outputs_show = torch.cat([pred_1, pred_2, pred_3], dim=1)
+                # outputs_show = Variable(outputs_show[0], requires_grad=False).cpu().float().numpy() * 255
+                #
+                # pred_1 = out_rgb[0:1, 0:1, :, :]
+                # pred_1 = normPRED(pred_1)
+                # pred_2 = out_rgb[0:1, 1:2, :, :]
+                # pred_2 = normPRED(pred_2)
+                # pred_3 = out_rgb[0:1, 2:3, :, :]
+                # pred_3 = normPRED(pred_3)
+                # outputs_show1 = torch.cat([pred_1, pred_2, pred_3], dim=1)
+                # outputs_show1 = Variable(outputs_show1[0], requires_grad=False).cpu().float().numpy() * 255
 
                 inputshow = normimage(inputs)
                 gtshow = normimage(gt)
                 outshow = normimage(out_rgb)
 
-
                 shows = []
-                shows.append(inputs_show)
-                shows.append(gt_show)
-                shows.append(outputs_show)
-                shows.append(outputs_show1)
+                # shows.append(inputs_show)
+                # shows.append(gt_show)
+                # shows.append(outputs_show)
+                # shows.append(outputs_show1)
                 shows.append(inputshow.transpose([2, 0, 1]))
                 shows.append(gtshow.transpose([2, 0, 1]))
                 shows.append(outshow.transpose([2, 0, 1]))
                 vis.images(shows, nrow=4, padding=3, win=1, opts=dict(title='Output images'))
-
-            if ite_num % 50 == 0:
+                ite_num4val = 0
+            if ite_num % 100 == 0:
                 save_latest(model, optimizer, cfg.work_dir, epoch, ite_num)
                 model.train()
-        if epoch % 5 == 0:
+        if epoch % 20 == 0 or epoch == cfg.total_epoch - 1:
             # print('-'*30, 'saving model')
             save_epoch(model, optimizer, cfg.work_dir, epoch, ite_num)
             model.train()
@@ -275,6 +274,7 @@ if __name__ == '__main__':
     write.close()
         # print(optimizer.param_groups[0]['lr'])
     print()
+    save_epoch(model, optimizer, cfg.work_dir, epoch, ite_num)
     logger.info('Finish Training')
 
 

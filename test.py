@@ -62,7 +62,7 @@ def parse_args():
                         default='/home/dong/python-project/Dehaze/configs/try.py',
                         help='train config file path')
     parser.add_argument('--load_from',
-                        default='/home/dong/python-project/Dehaze/checkpoints/baseline/epoch_196.pth',
+                        default='/home/dong/python-project/Dehaze/checkpoints/dehaze5_finetune2/epoch_400.pth',
                         help='the dir to save logs and models,')
     parser.add_argument('--savepath', help='the dir to save logs and models,')
     group_gpus = parser.add_mutually_exclusive_group()
@@ -115,7 +115,7 @@ if __name__ == '__main__':
     datasets = build_dataset(cfg.data.test)
     # put model on gpu
     if torch.cuda.is_available():
-        model = model.cuda()
+        model = DataParallel(model.cuda(), device_ids=cfg.gpu_ids)
     # create data_loader
     data_loader = build_dataloader(
         datasets,
@@ -128,21 +128,27 @@ if __name__ == '__main__':
     save_path = osp.join(cfg.savepath, cfg.load_from.split('/')[-1].split('.')[0])
     mkdir_or_exist(save_path)
     # before run
-
+    model.eval()
+    t = time.time()
     for i, data in enumerate(data_loader):
         # before iter
-        inputs, gt = data['image'], data['gt']
-        out_rgb = model(inputs)
 
+        inputs, gt = data['image'], data['gt']
+        with torch.no_grad():
+            out_rgb = model(inputs)
+        print('writing' + data['image_id'][0] + '.png')
         input_numpy = normimage(inputs)
         gt_numpy = normimage(gt)
         rgb_numpy = normimage(out_rgb)
 
         inputsavepath = osp.join(save_path, data['image_id'][0] + '_input.png')
-        gtsavepath = osp.join(save_path,  data['image_id'][0] + '_gt.png')
-        outsavepath = osp.join(save_path,  data['image_id'][0] + '_out.png')
+        # gtsavepath = osp.join(save_path,  data['image_id'][0] + '_gt.png')
+        outsavepath = osp.join(save_path,  data['image_id'][0] + '.png')
 
         save_image(input_numpy, inputsavepath)
-        save_image(gt_numpy, gtsavepath)
+        # save_image(gt_numpy, gtsavepath)
         save_image(rgb_numpy, outsavepath)
+    tx = time.time() - t
+    tx = tx / 30
+    print(tx)
 
