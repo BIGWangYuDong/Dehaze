@@ -119,8 +119,8 @@ class DehazeNetNew(BaseNet):
             if isinstance(m, nn.Conv2d):
                 xavier_init(m)
         self.backbone.init_weights(pretrained)
-        for param in self.backbone.parameters():
-            param.requires_grad = False
+        # for param in self.backbone.parameters():
+        #     param.requires_grad = False
 
     def forward(self, x):
         dense_out1, dense_out2, dense_out3, dense_out4, dense_out5 = self.backbone(x)

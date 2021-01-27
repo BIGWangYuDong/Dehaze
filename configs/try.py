@@ -22,8 +22,8 @@ test_ann_file_path = 'test.txt'         # txt file for loading images, default =
 
 img_norm_cfg = dict(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
 train_pipeline = [dict(type='LoadImageFromFile', gt_type='color'),
-                  dict(type='Resize', img_scale=(1100,1100), keep_ratio=True),
-                  dict(type='RandomCrop', img_scale=(1024,1024)),
+                  dict(type='Resize', img_scale=(300,300), keep_ratio=True),
+                  dict(type='RandomCrop', img_scale=(256,256)),
                   dict(type='RandomFlip', flip_ratio=0.5),
                   # dict(type='Pad', size_divisor=32, mode='resize'),
                   dict(type='ImageToTensor'),
@@ -31,6 +31,7 @@ train_pipeline = [dict(type='LoadImageFromFile', gt_type='color'),
 test_pipeling = [dict(type='LoadImageFromFile', gt_type='color'),
                  # dict(type='Resize', img_scale=(256,256), keep_ratio=True),
                  # dict(type='Pad', size_divisor=32, mode='resize'),
+                 dict(type='FlipEnsemble'),
                  dict(type='ImageToTensor'),
                  dict(type='Normalize', **img_norm_cfg)]
 
@@ -74,7 +75,7 @@ optimizer = dict(type='Adam', lr=0.0001, betas=[0.5, 0.999])    # optimizer with
 # 需要写iter
 lr_config = dict(type='Epoch',          # Epoch or Iter
                  warmup='linear',       # liner, step, exp,
-                 step=[300, 400],          # start with 1
+                 step=[350, 500],          # start with 1
                  liner_end=0.00001,
                  step_gamma=0.1,
                  exp_gamma=0.9)
@@ -88,13 +89,13 @@ log_config = dict(
         dict(type='VisdomLoggerHook')
     ])
 
-total_epoch = 400
+total_epoch = 500
 total_iters = None                      # epoch before iters,
-work_dir = './checkpoints/dehaze5_finetune2'      #
-load_from = None            # only load network parameters
+work_dir = './checkpoints/dehaze6'      #
+load_from = None                        # only load network parameters
 resume_from = None                      # resume training
 save_freq_iters = 500                   # saving frequent (saving every XX iters)
 save_freq_epoch = 1                     # saving frequent (saving every XX epoch(s))
 log_level = 'INFO'                      # The level of logging.
 
-savepath = 'results/dehaze5_finetune2'
+savepath = 'results/dehaze6'

@@ -145,6 +145,12 @@ class ImageToTensor(object):
         else:
             results['image'] = totensor(image)
             results['gt'] = totensor(gt)
+        if 'image_flip' in results:
+            image_flip = results['image_flip']
+            if torch.cuda.is_available():
+                results['image_flip'] = totensor(image_flip).cuda()
+            else:
+                results['image_flip'] = totensor(image_flip)
         results['image_id'] = results['image_path'].split('/')[-1].split('.')[0]
         return results
 
@@ -161,4 +167,24 @@ class Normalize(object):
         Normalize = transforms.Normalize(mean=self.mean, std=self.std)
         results['image'] = Normalize(image)
         results['gt'] = Normalize(gt)
+        if 'image_flip' in results:
+            image_flip = results['image_flip']
+            results['image_flip'] = Normalize(image_flip)
+        return results
+
+
+@PIPELINES.register_module()
+class FlipEnsemble(object):
+    def __init__(self, flip_ratio=0.5):
+        if flip_ratio is None:
+            self.flip_ratio = None
+        else:
+            assert isinstance(flip_ratio, float)
+            self.flip_ratio = flip_ratio
+
+    def __call__(self, results):
+        image, gt = results['image'], results['gt']
+        results['image_flip'] = image.transpose(Image.FLIP_LEFT_RIGHT)
+        # results['gt_flip'] = gt.transpose(Image.FLIP_LEFT_RIGHT)
+
         return results

@@ -4,6 +4,18 @@ from PIL import Image
 import os
 
 
+def save_ensemble_image(image_numpy, image_flip_numpy, image_path):
+    image_pil = Image.fromarray(image_numpy)
+    image_flip_pil = Image.fromarray(image_flip_numpy)
+    image_flip_pil = image_flip_pil.transpose(Image.FLIP_LEFT_RIGHT)
+    image_pil = np.asarray(image_pil).astype(np.uint16)
+    image_flip_pil = np.asarray(image_flip_pil).astype(np.uint16)
+    out = (image_flip_pil + image_pil) / 2
+    out = out.astype(np.uint8)
+    out = Image.fromarray(out)
+    out.save(image_path)
+
+
 def save_image(image_numpy, image_path, aspect_ratio=1.0):
     """Save a numpy image to the disk
 

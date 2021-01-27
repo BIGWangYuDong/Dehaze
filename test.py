@@ -23,7 +23,7 @@ from Dehaze.utils import (mkdir_or_exist, get_root_logger,
 from Dehaze.core.Losses import build_loss
 from Dehaze.Visualizer import Visualizer
 import numpy as np
-from Dehaze.utils.save_image import save_image, normimage
+from Dehaze.utils.save_image import save_image, normimage, save_ensemble_image
 
 
 def normPRED(d):
@@ -134,20 +134,28 @@ if __name__ == '__main__':
         # before iter
 
         inputs, gt = data['image'], data['gt']
+        inputs_flip = data['image_flip']
         with torch.no_grad():
             out_rgb = model(inputs)
+            out_rgb_flip = model(inputs_flip)
         print('writing' + data['image_id'][0] + '.png')
         input_numpy = normimage(inputs)
         gt_numpy = normimage(gt)
         rgb_numpy = normimage(out_rgb)
+        rgb_flip_numpy = normimage(out_rgb_flip)
+
 
         inputsavepath = osp.join(save_path, data['image_id'][0] + '_input.png')
         # gtsavepath = osp.join(save_path,  data['image_id'][0] + '_gt.png')
-        outsavepath = osp.join(save_path,  data['image_id'][0] + '.png')
+        outrgbsavepath = osp.join(save_path,  data['image_id'][0] + '_output.png')
+        outrgbflipsavepath = osp.join(save_path, data['image_id'][0] + '_outputflip.png')
+        outsavepath = osp.join(save_path, data['image_id'][0] + '.png')
 
         save_image(input_numpy, inputsavepath)
         # save_image(gt_numpy, gtsavepath)
-        save_image(rgb_numpy, outsavepath)
+        save_image(rgb_numpy, outrgbsavepath)
+        save_image(rgb_flip_numpy, outrgbflipsavepath)
+        save_ensemble_image(rgb_numpy, rgb_flip_numpy, outsavepath)
     tx = time.time() - t
     tx = tx / 30
     print(tx)
