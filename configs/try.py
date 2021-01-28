@@ -16,14 +16,14 @@ data_root_train = '/home/dong/python-project/Dehaze/DATA/Train/'                
 data_root_test = '/home/dong/python-project/Dehaze/DATA/Test/'
 train_ann_file_path = 'train.txt'        # txt file for loading images, default = train.txt
 train_ann_finetune_path = 'train_finetune.txt'
-val_ann_file_path = 'test.txt'          # txt file for loading images (validate during training process), default = test.txt
-test_ann_file_path = 'test.txt'         # txt file for loading images, default = test.txt
+val_ann_file_path = 'val.txt'          # txt file for loading images (validate during training process), default = test.txt
+test_ann_file_path = 'val.txt'         # txt file for loading images, default = test.txt
 
 
 img_norm_cfg = dict(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
 train_pipeline = [dict(type='LoadImageFromFile', gt_type='color'),
-                  dict(type='Resize', img_scale=(300,300), keep_ratio=True),
-                  dict(type='RandomCrop', img_scale=(256,256)),
+                  dict(type='Resize', img_scale=(1100, 1100), keep_ratio=True),
+                  dict(type='RandomCrop', img_scale=(1024, 1024)),
                   dict(type='RandomFlip', flip_ratio=0.5),
                   # dict(type='Pad', size_divisor=32, mode='resize'),
                   dict(type='ImageToTensor'),
@@ -36,7 +36,7 @@ test_pipeling = [dict(type='LoadImageFromFile', gt_type='color'),
                  dict(type='Normalize', **img_norm_cfg)]
 
 data = dict(
-    samples_per_gpu=4,                                  # batch size, default = 4
+    samples_per_gpu=2,                                  # batch size, default = 4
     workers_per_gpu=0,                                  # multi process, default = 4, debug uses 0
     val_samples_per_gpu=1,                              # validate batch size, default = 1
     val_workers_per_gpu=0,                              # validate multi process, default = 4
@@ -75,7 +75,7 @@ optimizer = dict(type='Adam', lr=0.0001, betas=[0.5, 0.999])    # optimizer with
 # 需要写iter
 lr_config = dict(type='Epoch',          # Epoch or Iter
                  warmup='linear',       # liner, step, exp,
-                 step=[350, 500],          # start with 1
+                 step=[250, 600],          # start with 1
                  liner_end=0.00001,
                  step_gamma=0.1,
                  exp_gamma=0.9)
@@ -89,13 +89,13 @@ log_config = dict(
         dict(type='VisdomLoggerHook')
     ])
 
-total_epoch = 500
+total_epoch = 600
 total_iters = None                      # epoch before iters,
-work_dir = './checkpoints/dehaze6'      #
-load_from = None                        # only load network parameters
+work_dir = './checkpoints/dehaze6_finetune2'      #
+load_from = '/home/dong/python-project/Dehaze/checkpoints/dehaze6_define1/epoch_500.pth'                        # only load network parameters
 resume_from = None                      # resume training
 save_freq_iters = 500                   # saving frequent (saving every XX iters)
 save_freq_epoch = 1                     # saving frequent (saving every XX epoch(s))
 log_level = 'INFO'                      # The level of logging.
 
-savepath = 'results/dehaze6'
+savepath = 'results/dehaze6_finetune2'

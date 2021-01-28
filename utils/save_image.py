@@ -15,6 +15,49 @@ def save_ensemble_image(image_numpy, image_flip_numpy, image_path):
     out = Image.fromarray(out)
     out.save(image_path)
 
+def save_ensemble_image_8(rgb_numpy,
+                          image_flip_lr_numpy,
+                          image_rotate_270_numpy,
+                          image_rotate_180_numpy,
+                          image_rotate_90_numpy,
+                          image_flip_lr_rotate_270_numpy,
+                          image_flip_lr_rotate_180_numpy,
+                          image_flip_lr_rotate_90_numpy,
+                          image_path):
+    image_rgb_numpy = Image.fromarray(rgb_numpy)
+    image_flip_lr = Image.fromarray(image_flip_lr_numpy)
+    image_rotate_270 = Image.fromarray(image_rotate_270_numpy)
+    image_rotate_180 = Image.fromarray(image_rotate_180_numpy)
+    image_rotate_90 = Image.fromarray(image_rotate_90_numpy)
+    image_flip_lr_rotate_270 = Image.fromarray(image_flip_lr_rotate_270_numpy)
+    image_flip_lr_rotate_180 = Image.fromarray(image_flip_lr_rotate_180_numpy)
+    image_flip_lr_rotate_90 = Image.fromarray(image_flip_lr_rotate_90_numpy)
+
+    image_flip_lr = image_flip_lr.transpose(Image.FLIP_LEFT_RIGHT)
+    image_rotate_270 = image_rotate_270.transpose(Image.ROTATE_90)
+    image_rotate_180 = image_rotate_180.transpose(Image.ROTATE_180)
+    image_rotate_90 = image_rotate_90.transpose(Image.ROTATE_270)
+    image_flip_lr_rotate_270 = image_flip_lr_rotate_270.transpose(Image.ROTATE_90).transpose(Image.FLIP_LEFT_RIGHT)
+    image_flip_lr_rotate_180 = image_flip_lr_rotate_180.transpose(Image.ROTATE_180).transpose(Image.FLIP_LEFT_RIGHT)
+    image_flip_lr_rotate_90 = image_flip_lr_rotate_90.transpose(Image.ROTATE_270).transpose(Image.FLIP_LEFT_RIGHT)
+
+
+    image_pil = np.asarray(image_rgb_numpy).astype(np.uint32)
+    image_flip_pil = np.asarray(image_flip_lr).astype(np.uint32)
+    image_rotate_270 = np.asarray(image_rotate_270).astype(np.uint32)
+    image_rotate_180 = np.asarray(image_rotate_180).astype(np.uint32)
+    image_rotate_90 = np.asarray(image_rotate_90).astype(np.uint32)
+    image_flip_lr_rotate_270 = np.asarray(image_flip_lr_rotate_270).astype(np.uint32)
+    image_flip_lr_rotate_180 = np.asarray(image_flip_lr_rotate_180).astype(np.uint32)
+    image_flip_lr_rotate_90 = np.asarray(image_flip_lr_rotate_90).astype(np.uint32)
+
+    out = (image_pil + image_flip_pil + image_rotate_270 + image_rotate_180 +
+           image_rotate_90 + image_flip_lr_rotate_270 + image_flip_lr_rotate_180 + image_flip_lr_rotate_90) / 8
+    out = out.astype(np.uint8)
+    out = Image.fromarray(out)
+    out.save(image_path)
+
+
 
 def save_image(image_numpy, image_path, aspect_ratio=1.0):
     """Save a numpy image to the disk

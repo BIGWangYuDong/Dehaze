@@ -23,7 +23,8 @@ from Dehaze.utils import (mkdir_or_exist, get_root_logger,
 from Dehaze.core.Losses import build_loss
 from Dehaze.Visualizer import Visualizer
 import numpy as np
-from Dehaze.utils.save_image import save_image, normimage, save_ensemble_image
+from Dehaze.utils.save_image import (save_image, normimage,
+                                     save_ensemble_image, save_ensemble_image_8)
 
 
 def normPRED(d):
@@ -62,7 +63,7 @@ def parse_args():
                         default='/home/dong/python-project/Dehaze/configs/try.py',
                         help='train config file path')
     parser.add_argument('--load_from',
-                        default='/home/dong/python-project/Dehaze/checkpoints/dehaze5_finetune2/epoch_400.pth',
+                        default='/home/dong/python-project/Dehaze/checkpoints/dehaze6_define1/epoch_500.pth',
                         help='the dir to save logs and models,')
     parser.add_argument('--savepath', help='the dir to save logs and models,')
     group_gpus = parser.add_mutually_exclusive_group()
@@ -134,28 +135,67 @@ if __name__ == '__main__':
         # before iter
 
         inputs, gt = data['image'], data['gt']
-        inputs_flip = data['image_flip']
+        inputs_flip_lr = data['image_flip_lr']
+        inputs_rotate_270 = data['image_rotate_270']
+        inputs_rotate_180 = data['image_rotate_180']
+        inputs_rotate_90 = data['image_rotate_90']
+        inputs_flip_lr_rotate_270 = data['image_flip_lr_rotate_270']
+        inputs_flip_lr_rotate_180 = data['image_flip_lr_rotate_180']
+        inputs_flip_lr_rotate_90 = data['image_flip_lr_rotate_90']
         with torch.no_grad():
             out_rgb = model(inputs)
-            out_rgb_flip = model(inputs_flip)
+            image_flip_lr            = model(inputs_flip_lr)
+            image_rotate_270         = model(inputs_rotate_270)
+            image_rotate_180         = model(inputs_rotate_180)
+            image_rotate_90          = model(inputs_rotate_90)
+            image_flip_lr_rotate_270 = model(inputs_flip_lr_rotate_270)
+            image_flip_lr_rotate_180 = model(inputs_flip_lr_rotate_180)
+            image_flip_lr_rotate_90  = model(inputs_flip_lr_rotate_90)
         print('writing' + data['image_id'][0] + '.png')
         input_numpy = normimage(inputs)
         gt_numpy = normimage(gt)
         rgb_numpy = normimage(out_rgb)
-        rgb_flip_numpy = normimage(out_rgb_flip)
+        image_flip_lr_numpy            = normimage(image_flip_lr            )
+        image_rotate_270_numpy         = normimage(image_rotate_270         )
+        image_rotate_180_numpy         = normimage(image_rotate_180         )
+        image_rotate_90_numpy          = normimage(image_rotate_90          )
+        image_flip_lr_rotate_270_numpy = normimage(image_flip_lr_rotate_270 )
+        image_flip_lr_rotate_180_numpy = normimage(image_flip_lr_rotate_180 )
+        image_flip_lr_rotate_90_numpy  = normimage(image_flip_lr_rotate_90  )
 
+        outsavepath = osp.join(save_path, data['image_id'][0] + '.png')
 
         inputsavepath = osp.join(save_path, data['image_id'][0] + '_input.png')
-        # gtsavepath = osp.join(save_path,  data['image_id'][0] + '_gt.png')
-        outrgbsavepath = osp.join(save_path,  data['image_id'][0] + '_output.png')
-        outrgbflipsavepath = osp.join(save_path, data['image_id'][0] + '_outputflip.png')
-        outsavepath = osp.join(save_path, data['image_id'][0] + '.png')
+
+        outrgbsavepath = osp.join(save_path,  data['image_id'][0] + '_orig.png')
+        outflip_lrsavepath = osp.join(save_path, data['image_id'][0] + '_flip_lr.png')
+        outrotate_270savepath = osp.join(save_path, data['image_id'][0] + '_rotate_270.png')
+        outrotate_180savepath = osp.join(save_path, data['image_id'][0] + '_rotate_180.png')
+        outrotate_90savepath = osp.join(save_path, data['image_id'][0] + '_rotate_90.png')
+        outflip_lr_rotate_270savepath = osp.join(save_path, data['image_id'][0] + '_flip_lr_rotate_270.png')
+        outflip_lr_rotate_180savepath = osp.join(save_path, data['image_id'][0] + '_flip_lr_rotate_180.png')
+        outflip_lr_rotate_90savepath = osp.join(save_path, data['image_id'][0] + '_flip_lr_rotate_90.png')
 
         save_image(input_numpy, inputsavepath)
         # save_image(gt_numpy, gtsavepath)
         save_image(rgb_numpy, outrgbsavepath)
-        save_image(rgb_flip_numpy, outrgbflipsavepath)
-        save_ensemble_image(rgb_numpy, rgb_flip_numpy, outsavepath)
+        save_image(image_flip_lr_numpy, outflip_lrsavepath)
+        save_image(image_rotate_270_numpy, outrotate_270savepath)
+        save_image(image_rotate_180_numpy, outrotate_180savepath)
+        save_image(image_rotate_90_numpy, outrotate_90savepath)
+        save_image(image_flip_lr_rotate_270_numpy, outflip_lr_rotate_270savepath)
+        save_image(image_flip_lr_rotate_180_numpy, outflip_lr_rotate_180savepath)
+        save_image(image_flip_lr_rotate_90_numpy, outflip_lr_rotate_90savepath)
+
+        save_ensemble_image_8(rgb_numpy,
+                              image_flip_lr_numpy,
+                              image_rotate_270_numpy,
+                              image_rotate_180_numpy,
+                              image_rotate_90_numpy,
+                              image_flip_lr_rotate_270_numpy,
+                              image_flip_lr_rotate_180_numpy,
+                              image_flip_lr_rotate_90_numpy,
+                              outsavepath)
     tx = time.time() - t
     tx = tx / 30
     print(tx)

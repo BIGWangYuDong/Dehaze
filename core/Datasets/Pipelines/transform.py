@@ -145,12 +145,31 @@ class ImageToTensor(object):
         else:
             results['image'] = totensor(image)
             results['gt'] = totensor(gt)
-        if 'image_flip' in results:
-            image_flip = results['image_flip']
+        if 'image_flip_lr' in results:
+            image_flip_lr            = results['image_flip_lr']
+            image_rotate_270         = results['image_rotate_270']
+            image_rotate_180         = results['image_rotate_180']
+            image_rotate_90          = results['image_rotate_90']
+            image_flip_lr_rotate_270 = results['image_flip_lr_rotate_270']
+            image_flip_lr_rotate_180 = results['image_flip_lr_rotate_180']
+            image_flip_lr_rotate_90  = results['image_flip_lr_rotate_90']
             if torch.cuda.is_available():
-                results['image_flip'] = totensor(image_flip).cuda()
+                results['image_flip_lr'] = totensor(image_flip_lr).cuda()
+                results['image_rotate_270'] = totensor(image_rotate_270).cuda()
+                results['image_rotate_180'] = totensor(image_rotate_180).cuda()
+                results['image_rotate_90'] = totensor(image_rotate_90).cuda()
+                results['image_flip_lr_rotate_270'] = totensor(image_flip_lr_rotate_270).cuda()
+                results['image_flip_lr_rotate_180'] = totensor(image_flip_lr_rotate_180).cuda()
+                results['image_flip_lr_rotate_90'] = totensor(image_flip_lr_rotate_90).cuda()
             else:
-                results['image_flip'] = totensor(image_flip)
+                results['image_flip_lr'] = totensor(image_flip_lr)
+                results['image_rotate_270'] = totensor(image_rotate_270)
+                results['image_rotate_180'] = totensor(image_rotate_180)
+                results['image_rotate_90'] = totensor(image_rotate_90)
+                results['image_flip_lr_rotate_270'] = totensor(image_flip_lr_rotate_270)
+                results['image_flip_lr_rotate_180'] = totensor(image_flip_lr_rotate_180)
+                results['image_flip_lr_rotate_90'] = totensor(image_flip_lr_rotate_90)
+
         results['image_id'] = results['image_path'].split('/')[-1].split('.')[0]
         return results
 
@@ -167,9 +186,21 @@ class Normalize(object):
         Normalize = transforms.Normalize(mean=self.mean, std=self.std)
         results['image'] = Normalize(image)
         results['gt'] = Normalize(gt)
-        if 'image_flip' in results:
-            image_flip = results['image_flip']
-            results['image_flip'] = Normalize(image_flip)
+        if 'image_flip_lr' in results:
+            image_flip_lr = results['image_flip_lr']
+            image_rotate_270 = results['image_rotate_270']
+            image_rotate_180 = results['image_rotate_180']
+            image_rotate_90 = results['image_rotate_90']
+            image_flip_lr_rotate_270 = results['image_flip_lr_rotate_270']
+            image_flip_lr_rotate_180 = results['image_flip_lr_rotate_180']
+            image_flip_lr_rotate_90 = results['image_flip_lr_rotate_90']
+            results['image_flip_lr'] = Normalize(image_flip_lr)
+            results['image_rotate_270'] = Normalize(image_rotate_270)
+            results['image_rotate_180'] = Normalize(image_rotate_180)
+            results['image_rotate_90'] = Normalize(image_rotate_90)
+            results['image_flip_lr_rotate_270'] = Normalize(image_flip_lr_rotate_270)
+            results['image_flip_lr_rotate_180'] = Normalize(image_flip_lr_rotate_180)
+            results['image_flip_lr_rotate_90'] = Normalize(image_flip_lr_rotate_90)
         return results
 
 
@@ -184,7 +215,15 @@ class FlipEnsemble(object):
 
     def __call__(self, results):
         image, gt = results['image'], results['gt']
-        results['image_flip'] = image.transpose(Image.FLIP_LEFT_RIGHT)
+
+        results['image_flip_lr'] = image.transpose(Image.FLIP_LEFT_RIGHT)
+        results['image_rotate_270'] = image.transpose(Image.ROTATE_270)
+        results['image_rotate_180'] = image.transpose(Image.ROTATE_180)
+        results['image_rotate_90']= image.transpose(Image.ROTATE_90)
+        results['image_flip_lr_rotate_270'] = image.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_270)
+        results['image_flip_lr_rotate_180'] = image.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_180)
+        results['image_flip_lr_rotate_90'] = image.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_90)
+
         # results['gt_flip'] = gt.transpose(Image.FLIP_LEFT_RIGHT)
 
         return results
