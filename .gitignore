@@ -7,3 +7,4 @@ vgg16.weight
 log/*
 runs/*
 runner/*
+develop_model/*

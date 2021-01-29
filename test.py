@@ -63,7 +63,7 @@ def parse_args():
                         default='/home/dong/python-project/Dehaze/configs/try.py',
                         help='train config file path')
     parser.add_argument('--load_from',
-                        default='/home/dong/python-project/Dehaze/checkpoints/dehaze6_finetune3/epoch_400.pth',
+                        default='/home/dong/python-project/Dehaze/checkpoints/dehaze6_try/epoch_381.pth',
                         help='the dir to save logs and models,')
     parser.add_argument('--savepath', help='the dir to save logs and models,')
     group_gpus = parser.add_mutually_exclusive_group()
@@ -117,6 +117,7 @@ if __name__ == '__main__':
     # put model on gpu
     if torch.cuda.is_available():
         model = DataParallel(model.cuda(), device_ids=cfg.gpu_ids)
+        # model.cuda()
     # create data_loader
     data_loader = build_dataloader(
         datasets,

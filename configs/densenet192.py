@@ -2,9 +2,15 @@ train_name = 'Train'
 val_name = 'Val'
 test_name = 'Test'
 # backbone 和 init_type 需要写
-model = dict(type='DehazeNetNew',
-             backbone=dict(type='DenseNew', pretrained=True),
-             pretrained=True,
+model = dict(type='DehazeNet192',
+             backbone=dict(type='DenseNet192',
+                           growth_rate=32,
+                           block_config=(3, 6, 12, 24, 48),
+                           num_init_features=32,
+                           bn_size=4,
+                           drop_rate=0,
+                           memory_efficient=False),
+             pretrained=False,
              init_weight_type=dict(type='normal_init',
                                    mean=0,
                                    std=1),

@@ -17,7 +17,7 @@ class DenseBlock(nn.Module):
         self.init_weights(pretrained=pretrained)
 
     def init_weights(self, pretrained):
-        densenet = models.densenet121(pretrained=pretrained)
+        densenet = models.densenet201(pretrained=pretrained)
         self.block1 = nn.Sequential(OrderedDict([
                                     ('conv1', densenet.features[0]),
                                     ('norm1', densenet.features[1]),

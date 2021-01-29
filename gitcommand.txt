@@ -66,6 +66,9 @@ git branch -d XXX
 git pull origin XXX(网上) XXX(本地) # 将网上的分支pull到本地
 
 
+git 提交出错，
+git reset HEAD
+
 
 
 
