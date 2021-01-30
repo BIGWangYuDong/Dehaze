@@ -70,13 +70,13 @@ loss_perc = dict(type='PerceptualLoss', loss_weight=1.0,
                  no_vgg_instance=False, vgg_mean=False,
                  vgg_choose='conv4_3', vgg_maxpooling=False)
 
-optimizer = dict(type='Adam', lr=0.0001, betas=[0.5, 0.999])    # optimizer with type, learning rate, and betas.
+optimizer = dict(type='Adam', lr=0.00005, betas=[0.5, 0.999])    # optimizer with type, learning rate, and betas.
 
 # 需要写iter
 lr_config = dict(type='Epoch',          # Epoch or Iter
                  warmup='linear',       # liner, step, exp,
-                 step=[150, 400],          # start with 1
-                 liner_end=0.00001,
+                 step=[100, 200],          # start with 1
+                 liner_end=0.000005,
                  step_gamma=0.1,
                  exp_gamma=0.9)
 
@@ -98,4 +98,4 @@ save_freq_iters = 500                   # saving frequent (saving every XX iters
 save_freq_epoch = 1                     # saving frequent (saving every XX epoch(s))
 log_level = 'INFO'                      # The level of logging.
 
-savepath = 'results/dehaze6_finetune3'
+savepath = 'results/dehaze6_finetune4_1024'
