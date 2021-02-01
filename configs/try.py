@@ -98,4 +98,4 @@ save_freq_iters = 500                   # saving frequent (saving every XX iters
 save_freq_epoch = 1                     # saving frequent (saving every XX epoch(s))
 log_level = 'INFO'                      # The level of logging.
 
-savepath = 'results/dehaze6_finetune4_1024_2'
+savepath = 'results/dehaze6_finetune4_1024_new'
