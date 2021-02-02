@@ -242,23 +242,12 @@ class EMBlock(nn.Module):
         super(EMBlock, self).__init__()
         self.conv1 = nn.Conv2d(in_fea, mid_fea, 3, 1, 1)
         self.conv2 = nn.Conv2d(mid_fea, mid_fea, 3, 1, 1)
-        if index == 16:
-            self.avgpool32 = nn.AvgPool2d(16)
-        else:
-            self.avgpool32 = nn.AvgPool2d(32)
-        self.avgpool16 = nn.AvgPool2d(16)
-        self.avgpool8 = nn.AvgPool2d(8)
-        self.avgpool4 = nn.AvgPool2d(4)
+        self.avgpool32 = nn.AvgPool2d(16)
+        self.avgpool16 = nn.AvgPool2d(8)
+        self.avgpool8 = nn.AvgPool2d(4)
+        self.avgpool4 = nn.AvgPool2d(2)
 
         self.upsample = F.upsample_nearest
-
-        if index == 16:
-            self.upsample32 = nn.UpsamplingNearest2d(scale_factor=16)
-        else:
-            self.upsample32 = nn.UpsamplingNearest2d(scale_factor=32)
-        self.upsample16 = nn.UpsamplingNearest2d(scale_factor=16)
-        self.upsample8 = nn.UpsamplingNearest2d(scale_factor=8)
-        self.upsample4 = nn.UpsamplingNearest2d(scale_factor=4)
 
         self.conv3_4 = nn.Conv2d(mid_fea, int(mid_fea / 4), kernel_size=1, stride=1, padding=0)
         self.conv3_8 = nn.Conv2d(mid_fea, int(mid_fea / 4), kernel_size=1, stride=1, padding=0)
