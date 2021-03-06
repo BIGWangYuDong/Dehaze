@@ -151,6 +151,9 @@ if __name__ == '__main__':
     vis = visdom.Visdom()
     criterion_ssim_loss = build_loss(cfg.loss_ssim)
     criterion_l1_loss = build_loss(cfg.loss_l1)
+    criterion_fft_loss = build_loss(cfg.loss_fft)
+    criterion_brelu_loss = build_loss(cfg.loss_brelu)
+
     ite_num = 0
     start_epoch = 1     # start range at 1-1 = 0
     running_loss = 0.0
@@ -188,18 +191,22 @@ if __name__ == '__main__':
 
             loss_l1 = criterion_l1_loss(out_rgb, gt)
             loss_ssim = criterion_ssim_loss(out_rgb, gt)
-            loss = loss_l1 + loss_ssim
+            loss_fft = criterion_fft_loss(out_rgb, gt)
+            # loss_brelu = criterion_brelu_loss(out_rgb)
+            loss = loss_l1 + loss_ssim + loss_fft
             loss.backward()
             optimizer.step()
 
             write.add_scalar('loss_l1', loss_l1, ite_num)
             write.add_scalar('loss_ssim', loss_ssim, ite_num)
-            logger.info('Epoch: [%d][%d/%d]  lr: %f  time: %.3f loss_l1: %f  loss_ssim: %f  loss: %f',
+            write.add_scalar('loss_fft', loss_fft, ite_num)
+            logger.info('Epoch: [%d][%d/%d]  lr: %f  time: %.3f loss_l1: %f  loss_ssim: %f  loss_fft: %f loss: %f',
                         epoch+1, ite_num, max_iters, optimizer.param_groups[0]['lr'],
-                        data_time, loss_l1, loss_ssim, loss)
+                        data_time, loss_l1, loss_ssim, loss_fft, loss)
             losses = collections.OrderedDict()
             losses['loss_l1'] = loss_l1.data.cpu()
             losses['loss_ssim'] = loss_ssim.data.cpu()
+            losses['loss_fft'] = loss_fft.data.cpu()
             losses['total_loss'] = loss.data.cpu()
             visualizer.plot_current_losses(epoch + 1,
                                            float(i) / len(data_loader),
@@ -207,7 +214,7 @@ if __name__ == '__main__':
             # after iter
             time_ = time.time() - t
             t = time.time()
-            if ite_num4val % 40 == 0:
+            if ite_num4val % 5 == 0:
                 # pred_1 = inputs[0:1, 0:1, :, :]
                 # pred_1 = normPRED(pred_1)
                 # pred_2 = inputs[0:1, 1:2, :, :]

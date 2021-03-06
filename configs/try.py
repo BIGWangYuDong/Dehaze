@@ -2,7 +2,7 @@ train_name = 'Train'
 val_name = 'Val'
 test_name = 'Test'
 # backbone 和 init_type 需要写
-model = dict(type='DehazeNetNew',
+model = dict(type='DehazeNetWYD',
              backbone=dict(type='DenseNew', pretrained=True),
              pretrained=True,
              init_weight_type=dict(type='normal_init',
@@ -22,8 +22,8 @@ test_ann_file_path = 'val.txt'         # txt file for loading images, default = 
 
 img_norm_cfg = dict(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
 train_pipeline = [dict(type='LoadImageFromFile', gt_type='color'),
-                  dict(type='Resize', img_scale=(960, 960), keep_ratio=True),
-                  dict(type='RandomCrop', img_scale=(928, 928)),
+                  dict(type='Resize', img_scale=(1000, 1000), keep_ratio=True),
+                  dict(type='RandomCrop', img_scale=(512, 512)),
                   dict(type='RandomFlip', flip_ratio=0.5),
                   # dict(type='Pad', size_divisor=32, mode='resize'),
                   dict(type='ImageToTensor'),
@@ -36,13 +36,13 @@ test_pipeling = [dict(type='LoadImageFromFile', gt_type='color'),
                  dict(type='Normalize', **img_norm_cfg)]
 
 data = dict(
-    samples_per_gpu=1,                                  # batch size, default = 4
+    samples_per_gpu=4,                                  # batch size, default = 4
     workers_per_gpu=0,                                  # multi process, default = 4, debug uses 0
     val_samples_per_gpu=1,                              # validate batch size, default = 1
     val_workers_per_gpu=0,                              # validate multi process, default = 4
     train=dict(                                         # load data in training process, debug uses 0
         type=dataset_type,
-        ann_file=data_root_train + train_ann_finetune_path,
+        ann_file=data_root_train + train_ann_file_path,
         img_prefix=data_root_train + 'train/',
         gt_prefix=data_root_train + 'gt/',
         pipeline=train_pipeline),
@@ -69,13 +69,15 @@ loss_l1 = dict(type='L1Loss', loss_weight=1.0)
 loss_perc = dict(type='PerceptualLoss', loss_weight=1.0,
                  no_vgg_instance=False, vgg_mean=False,
                  vgg_choose='conv4_3', vgg_maxpooling=False)
+loss_fft = dict(type='FFTLoss', loss_weight=0.2)
+loss_brelu = dict(type='BRELULoss', loss_weight=0)
 
-optimizer = dict(type='Adam', lr=0.0001, betas=[0.5, 0.999])    # optimizer with type, learning rate, and betas.
+optimizer = dict(type='Adam', lr=1e-4, betas=[0.9, 0.999])    # optimizer with type, learning rate, and betas.
 
 # 需要写iter
 lr_config = dict(type='Epoch',          # Epoch or Iter
                  warmup='linear',       # liner, step, exp,
-                 step=[100, 200],          # start with 1
+                 step=[150, 400],          # start with 1
                  liner_end=0.00001,
                  step_gamma=0.1,
                  exp_gamma=0.9)
@@ -89,13 +91,13 @@ log_config = dict(
         dict(type='VisdomLoggerHook')
     ])
 
-total_epoch = 400
+total_epoch = 500
 total_iters = None                      # epoch before iters,
-work_dir = './checkpoints/dehaze6_finetune3'      #
-load_from = '/home/dong/python-project/Dehaze/checkpoints/dehaze6_define1/epoch_500.pth'                        # only load network parameters
+work_dir = './checkpoints/wyd/dehaze2'      #
+load_from = '/home/dong/python-project/Dehaze/checkpoints/wyd/dehaze1/epoch_81.pth'                        # only load network parameters
 resume_from = None                      # resume training
 save_freq_iters = 500                   # saving frequent (saving every XX iters)
 save_freq_epoch = 1                     # saving frequent (saving every XX epoch(s))
 log_level = 'INFO'                      # The level of logging.
 
-savepath = 'results/dehazenew_2_finetune1200'
+savepath = 'results/wyd/dehaze2'
