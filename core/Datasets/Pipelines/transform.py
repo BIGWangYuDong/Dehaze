@@ -227,3 +227,38 @@ class FlipEnsemble(object):
         # results['gt_flip'] = gt.transpose(Image.FLIP_LEFT_RIGHT)
 
         return results
+
+@PIPELINES.register_module()
+class RandomRotate90(object):
+    def __init__(self, ratio=0.5):
+        if ratio is None:
+            self.ratio = None
+        else:
+            assert isinstance(ratio, float)
+            self.ratio = ratio
+
+    def __call__(self, results):
+        image, gt = results['image'], results['gt']
+        rotate_prob = random.random()
+        if rotate_prob < self.ratio:
+            results['image'] = image.transpose(Image.ROTATE_90)
+            results['gt'] = gt.transpose(Image.ROTATE_90)
+        return results
+
+
+@PIPELINES.register_module()
+class RandomRotate180(object):
+    def __init__(self, ratio=0.5):
+        if ratio is None:
+            self.ratio = None
+        else:
+            assert isinstance(ratio, float)
+            self.ratio = ratio
+
+    def __call__(self, results):
+        image, gt = results['image'], results['gt']
+        rotate_prob = random.random()
+        if rotate_prob < self.ratio:
+            results['image'] = image.transpose(Image.ROTATE_180)
+            results['gt'] = gt.transpose(Image.ROTATE_180)
+        return results

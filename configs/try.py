@@ -22,8 +22,10 @@ test_ann_file_path = 'val.txt'         # txt file for loading images, default = 
 
 img_norm_cfg = dict(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
 train_pipeline = [dict(type='LoadImageFromFile', gt_type='color'),
-                  dict(type='Resize', img_scale=(1000, 1000), keep_ratio=True),
+                  dict(type='Resize', img_scale=(600, 600), keep_ratio=True),
                   dict(type='RandomCrop', img_scale=(512, 512)),
+                  dict(type='RandomRotate90', ratio=0.5),
+                  dict(type='RandomRotate180', ratio=0.5),
                   dict(type='RandomFlip', flip_ratio=0.5),
                   # dict(type='Pad', size_divisor=32, mode='resize'),
                   dict(type='ImageToTensor'),
@@ -64,12 +66,12 @@ train_cfg = dict(train_backbone=True)
 test_cfg = dict(metrics=['SSIM', 'MSE', 'PSNR'])
 
 loss_ssim = dict(type='SSIMLoss', window_size=11,
-                 size_average=True, loss_weight=1.0)
+                 size_average=True, loss_weight=0.5)
 loss_l1 = dict(type='L1Loss', loss_weight=1.0)
-loss_perc = dict(type='PerceptualLoss', loss_weight=1.0,
+loss_perc = dict(type='PerceptualLoss', loss_weight=0,
                  no_vgg_instance=False, vgg_mean=False,
                  vgg_choose='conv4_3', vgg_maxpooling=False)
-loss_fft = dict(type='FFTLoss', loss_weight=0.2)
+loss_fft = dict(type='FFTLoss', loss_weight=0)
 loss_brelu = dict(type='BRELULoss', loss_weight=0)
 
 optimizer = dict(type='Adam', lr=1e-4, betas=[0.9, 0.999])    # optimizer with type, learning rate, and betas.
@@ -77,7 +79,7 @@ optimizer = dict(type='Adam', lr=1e-4, betas=[0.9, 0.999])    # optimizer with t
 # 需要写iter
 lr_config = dict(type='Epoch',          # Epoch or Iter
                  warmup='linear',       # liner, step, exp,
-                 step=[150, 400],          # start with 1
+                 step=[150, 850],          # start with 1
                  liner_end=0.00001,
                  step_gamma=0.1,
                  exp_gamma=0.9)
@@ -91,13 +93,13 @@ log_config = dict(
         dict(type='VisdomLoggerHook')
     ])
 
-total_epoch = 500
+total_epoch = 1000
 total_iters = None                      # epoch before iters,
-work_dir = './checkpoints/wyd/dehaze2'      #
-load_from = '/home/dong/python-project/Dehaze/checkpoints/wyd/dehaze1/epoch_81.pth'                        # only load network parameters
+work_dir = './checkpoints/wyd/dehaze5'      #
+load_from = '/home/dong/python-project/Dehaze/checkpoints/wyd/dehaze4/epoch_501.pth'                        # only load network parameters
 resume_from = None                      # resume training
 save_freq_iters = 500                   # saving frequent (saving every XX iters)
 save_freq_epoch = 1                     # saving frequent (saving every XX epoch(s))
 log_level = 'INFO'                      # The level of logging.
 
-savepath = 'results/wyd/dehaze2'
+savepath = 'results/wyd/dehaze5'
